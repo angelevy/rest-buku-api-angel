@@ -14,6 +14,8 @@ app.use(cors({
     allowedHeaders: ["Content-Type"]
 }));
 app.use(express.json());
+app.use(multer.json());
+
 
 // GET all books
 app.get("/books", (req, res) => {
