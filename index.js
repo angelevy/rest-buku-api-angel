@@ -1,9 +1,10 @@
-// index.js
 const express = require("express");
 const cors = require("cors");
-const multer = require('multer');
+const multer = require("multer");
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -15,7 +16,6 @@ app.use(cors({
     allowedHeaders: ["Content-Type"]
 }));
 app.use(express.json());
-
 
 // GET all books
 app.get("/books", (req, res) => {
@@ -32,11 +32,10 @@ app.get("/books/:id", (req, res) => {
     }
 });
 
-// POST new book
+// POST new book with image upload
 app.post('/books', upload.single('image'), (req, res) => {
     try {
-        const title = req.body.title;
-        const author = req.body.author;
+        const { title, author } = req.body;
         const email = req.headers['authorization'] || "user@example.com";
         const image = req.file;
 
@@ -44,7 +43,8 @@ app.post('/books', upload.single('image'), (req, res) => {
             return res.status(400).json({ error: 'Title, author and image are required' });
         }
 
-        const coverUrl = `data:${image.mimetype};base64,${image.buffer.toString("base64")}`;
+        // buat base64 data URI dari buffer gambar
+        const coverUrl = `data:${image.mimetype};base64,${image.buffer.toString('base64')}`;
 
         const newBook = {
             id: Date.now().toString(),
@@ -62,7 +62,8 @@ app.post('/books', upload.single('image'), (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 });
-// PUT (update) book
+
+// PUT update book
 app.put("/books/:id", (req, res) => {
     const { id } = req.params;
     const { title, author, coverUrl, email } = req.body;
