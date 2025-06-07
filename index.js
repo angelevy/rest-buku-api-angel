@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 let books = require("./data");
 
 app.use(cors());
-app.use(multer.json());
+app.use(express.json());
 
 // GET all books
 app.get("/books", (req, res) => {
@@ -28,6 +28,8 @@ app.get("/books/:id", (req, res) => {
 
 // POST new book
 app.post("/books", upload.single("image"), (req, res) => {
+    console.log("Body:", req.body);
+    console.log("File:", req.file);    
     const { title, author, userId } = req.body;
 
     if (!req.file) {
