@@ -34,31 +34,34 @@ app.get("/books/:id", (req, res) => {
 
 // POST new book
 app.post('/books', upload.single('photo'), (req, res) => {
-    const title = req.body.title;
-    const author = req.body.author;
-    const email = req.body.email || "user@example.com"; // kalau tidak dikirim, default
-    const photo = req.file;  // Ini file foto
+    try {
+        const title = req.body.title;
+        const author = req.body.author;
+        const email = req.headers['authorization'] || "user@example.com";
+        const photo = req.file;
 
-    if (!title || !author || !photo) {
-        return res.status(400).json({ error: 'Title, author and photo are required' });
+        if (!title || !author || !photo) {
+            return res.status(400).json({ error: 'Title, author and photo are required' });
+        }
+
+        const coverUrl = `data:${photo.mimetype};base64,${photo.buffer.toString("base64")}`;
+
+        const newBook = {
+            id: Date.now().toString(),
+            title,
+            author,
+            email,
+            coverUrl
+        };
+
+        books.push(newBook);
+
+        res.json({ status: "success", data: newBook });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
     }
-
-    // Simulasi URL image (karena kita belum simpan ke disk atau cloud)
-    const coverUrl = `data:image/jpeg;base64,${req.file.buffer.toString("base64")}`;
-
-    const newBook = {
-        id: Date.now().toString(),
-        title,
-        author,
-        email,
-        coverUrl
-    };
-
-    books.push(newBook);
-
-    res.json({ status: "success", data: newBook });
 });
-
 // PUT (update) book
 app.put("/books/:id", (req, res) => {
     const { id } = req.params;
