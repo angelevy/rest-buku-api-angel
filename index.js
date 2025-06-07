@@ -8,7 +8,11 @@ const PORT = process.env.PORT || 3000;
 
 let books = require("./data");
 
-app.use(cors());
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type"]
+}));
 app.use(express.json());
 
 // GET all books
