@@ -33,18 +33,18 @@ app.get("/books/:id", (req, res) => {
 });
 
 // POST new book
-app.post('/books', upload.single('photo'), (req, res) => {
+app.post('/books', upload.single('image'), (req, res) => {
     try {
         const title = req.body.title;
         const author = req.body.author;
         const email = req.headers['authorization'] || "user@example.com";
-        const photo = req.file;
+        const image = req.file;
 
-        if (!title || !author || !photo) {
-            return res.status(400).json({ error: 'Title, author and photo are required' });
+        if (!title || !author || !image) {
+            return res.status(400).json({ error: 'Title, author and image are required' });
         }
 
-        const coverUrl = `data:${photo.mimetype};base64,${photo.buffer.toString("base64")}`;
+        const coverUrl = `data:${image.mimetype};base64,${image.buffer.toString("base64")}`;
 
         const newBook = {
             id: Date.now().toString(),
