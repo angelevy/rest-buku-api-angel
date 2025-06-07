@@ -2,7 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ dest: 'uploads/' });
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -32,13 +32,13 @@ app.get("/books/:id", (req, res) => {
 });
 
 // POST new book
-app.post("/books", upload.single("image"), (req, res) => {
-    console.log("Body:", req.body);
-    console.log("File:", req.file);    
-    const { title, author, userId } = req.body;
+app.post('/api/books', upload.single('photo'), (req, res) => {
+    const title = req.body.title;
+    const author = req.body.author;
+    const photo = req.file;  // Ini file foto
 
-    if (!req.file) {
-        return res.status(400).json({ status: "failed", message: "No image uploaded" });
+    if (!title || !author || !photo) {
+        return res.status(400).json({ error: 'Title, author and photo are required' });
     }
 
     // Simulasi URL image (karena kita belum simpan ke disk atau cloud)
@@ -54,7 +54,7 @@ app.post("/books", upload.single("image"), (req, res) => {
 
     books.push(newBook);
 
-    res.json({ status: "success", data: newBook });
+    res.json({ message: 'Book added successfully', data: { title, author, photoPath: photo.path } });
 });
 
 // PUT (update) book
