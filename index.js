@@ -17,12 +17,12 @@ app.use(express.json());
 
 
 // GET all books
-app.get("/api/books", (req, res) => {
+app.get("/books", (req, res) => {
     res.json(books);
 });
 
 // GET book by id
-app.get("/api/books/:id", (req, res) => {
+app.get("/books/:id", (req, res) => {
     const book = books.find(b => b.id === req.params.id);
     if (book) {
         res.json(book);
@@ -32,7 +32,7 @@ app.get("/api/books/:id", (req, res) => {
 });
 
 // POST new book
-app.post('/api/books', upload.single('photo'), (req, res) => {
+app.post('/books', upload.single('photo'), (req, res) => {
   const title = req.body.title;
   const author = req.body.author;
   const photo = req.file;  // Ini file foto
@@ -54,11 +54,11 @@ app.post('/api/books', upload.single('photo'), (req, res) => {
 
     books.push(newBook);
 
-  res.json({ message: 'Book added successfully', data: { title, author, photoPath: photo.path } });
+    res.json({ status: "success", data: newBook });
 });
 
 // PUT (update) book
-app.put("/api/books/:id", (req, res) => {
+app.put("/books/:id", (req, res) => {
     const { id } = req.params;
     const { title, author, coverUrl, email } = req.body;
     const index = books.findIndex(b => b.id === id);
@@ -72,7 +72,7 @@ app.put("/api/books/:id", (req, res) => {
 });
 
 // DELETE book
-app.delete("/api/books/:id", (req, res) => {
+app.delete("/books/:id", (req, res) => {
     const index = books.findIndex(b => b.id === req.params.id);
     if (index !== -1) {
         const deleted = books.splice(index, 1);
