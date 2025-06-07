@@ -1,8 +1,9 @@
 // index.js
 const express = require("express");
 const cors = require("cors");
-const multer = require("multer");
-const upload = multer({ dest: 'uploads/' });
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -33,13 +34,14 @@ app.get("/books/:id", (req, res) => {
 
 // POST new book
 app.post('/books', upload.single('photo'), (req, res) => {
-  const title = req.body.title;
-  const author = req.body.author;
-  const photo = req.file;  // Ini file foto
+    const title = req.body.title;
+    const author = req.body.author;
+    const email = req.body.email || "user@example.com"; // kalau tidak dikirim, default
+    const photo = req.file;  // Ini file foto
 
-  if (!title || !author || !photo) {
-    return res.status(400).json({ error: 'Title, author and photo are required' });
-  }
+    if (!title || !author || !photo) {
+        return res.status(400).json({ error: 'Title, author and photo are required' });
+    }
 
     // Simulasi URL image (karena kita belum simpan ke disk atau cloud)
     const coverUrl = `data:image/jpeg;base64,${req.file.buffer.toString("base64")}`;
@@ -48,7 +50,7 @@ app.post('/books', upload.single('photo'), (req, res) => {
         id: Date.now().toString(),
         title,
         author,
-        email: userId,
+        email,
         coverUrl
     };
 
