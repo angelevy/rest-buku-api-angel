@@ -32,7 +32,7 @@ app.get("/books/:id", (req, res) => {
 });
 
 // POST new book
-app.post("/books", upload.single("image"), (req, res) => {
+app.post("/books", upload.multer("image"), (req, res) => {
     console.log("Body:", req.body);
     console.log("File:", req.file);    
     const { title, author, userId } = req.body;
