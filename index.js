@@ -1,60 +1,87 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const mongoose = require("mongoose");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI;
 
-let books = require("./data");
+// Koneksi ke MongoDB
+mongoose.connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => console.log("MongoDB connected"))
+  .catch(err => console.error("MongoDB connection error:", err));
+
+// Schema dan Model Buku
+const bookSchema = new mongoose.Schema({
+    title: String,
+    author: String,
+    email: String,
+    coverUrl: String,
+});
+
+const Book = mongoose.model("Book", bookSchema);
+
+// Middleware
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 app.use(cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type"]
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json());
 
 // GET all books
-app.get("/books", (req, res) => {
-    res.json(books);
+app.get("/books", async (req, res) => {
+    try {
+        const email = req.headers['authorization'] || "user@example.com";
+        const books = await Book.find({ email });
+        res.json(books);
+    } catch (err) {
+        res.status(500).json({ message: "Server error" });
+    }
 });
 
 // GET book by id
-app.get("/books/:id", (req, res) => {
-    const book = books.find(b => b.id === req.params.id);
-    if (book) {
-        res.json(book);
-    } else {
-        res.status(404).json({ message: "Book not found" });
+app.get("/books/:id", async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+        if (book) {
+            res.json(book);
+        } else {
+            res.status(404).json({ message: "Book not found" });
+        }
+    } catch (err) {
+        res.status(500).json({ message: "Server error" });
     }
 });
 
 // POST new book with image upload
-app.post('/books', upload.single('image'), (req, res) => {
+app.post("/books", upload.single("image"), async (req, res) => {
     try {
         const { title, author } = req.body;
         const email = req.headers['authorization'] || "user@example.com";
         const image = req.file;
 
         if (!title || !author || !image) {
-            return res.status(400).json({ error: 'Title, author and image are required' });
+            return res.status(400).json({ error: "Title, author, and image are required" });
         }
 
-        // buat base64 data URI dari buffer gambar
-        const coverUrl = `data:${image.mimetype};base64,${image.buffer.toString('base64')}`;
+        const coverUrl = `data:${image.mimetype};base64,${image.buffer.toString("base64")}`;
 
-        const newBook = {
-            id: Date.now().toString(),
+        const newBook = new Book({
             title,
             author,
             email,
             coverUrl
-        };
+        });
 
-        books.push(newBook);
+        await newBook.save();
 
         res.json({ status: "success", data: newBook });
     } catch (error) {
@@ -64,27 +91,36 @@ app.post('/books', upload.single('image'), (req, res) => {
 });
 
 // PUT update book
-app.put("/books/:id", (req, res) => {
-    const { id } = req.params;
-    const { title, author, coverUrl, email } = req.body;
-    const index = books.findIndex(b => b.id === id);
+app.put("/books/:id", async (req, res) => {
+    try {
+        const { title, author, coverUrl, email } = req.body;
+        const updatedBook = await Book.findByIdAndUpdate(
+            req.params.id,
+            { title, author, coverUrl, email },
+            { new: true }
+        );
 
-    if (index !== -1) {
-        books[index] = { id, title, author, coverUrl, email };
-        res.json(books[index]);
-    } else {
-        res.status(404).json({ message: "Book not found" });
+        if (updatedBook) {
+            res.json(updatedBook);
+        } else {
+            res.status(404).json({ message: "Book not found" });
+        }
+    } catch (err) {
+        res.status(500).json({ message: "Server error" });
     }
 });
 
 // DELETE book
-app.delete("/books/:id", (req, res) => {
-    const index = books.findIndex(b => b.id === req.params.id);
-    if (index !== -1) {
-        const deleted = books.splice(index, 1);
-        res.json(deleted[0]);
-    } else {
-        res.status(404).json({ message: "Book not found" });
+app.delete("/books/:id", async (req, res) => {
+    try {
+        const deletedBook = await Book.findByIdAndDelete(req.params.id);
+        if (deletedBook) {
+            res.json(deletedBook);
+        } else {
+            res.status(404).json({ message: "Book not found" });
+        }
+    } catch (err) {
+        res.status(500).json({ message: "Server error" });
     }
 });
 
