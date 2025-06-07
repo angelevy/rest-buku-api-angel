@@ -1,7 +1,6 @@
 // index.js
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 const app = express();
@@ -10,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 let books = require("./data");
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(multer.json());
 
 // GET all books
 app.get("/books", (req, res) => {
