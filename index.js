@@ -167,16 +167,13 @@ app.post(
   validateArtworkData,
   asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Image is required" });
-    const { title, description, category, origin, artist } = req.body;
+    const { title, author} = req.body;
     const image = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
     }`;
     const item = await ArtworkService.create({
       title: title.trim(),
-      description: description.trim(),
-      category: category.trim(),
-      origin: origin.trim(),
-      artist: artist.trim(),
+      author: description.trim(),
       image,
     });
     res.status(201).json(item);
@@ -193,7 +190,7 @@ app.put(
       if (req.file) await deleteOldImage(`/uploads/${req.file.filename}`);
       return res.status(404).json({ error: "Artwork not found" });
     }
-    const { title, description, category, origin, artist } = req.body;
+    const { title, author } = req.body;
     let image = existing.image;
     if (req.file) {
       await deleteOldImage(existing.image);
@@ -203,10 +200,7 @@ app.put(
     }
     const updated = await ArtworkService.update(req.params.id, {
       title: title.trim(),
-      description: description.trim(),
-      category: category.trim(),
-      origin: origin.trim(),
-      artist: artist.trim(),
+      author: description.trim(),
       image,
     });
     res.json(updated);
