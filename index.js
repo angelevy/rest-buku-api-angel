@@ -176,7 +176,11 @@ app.post(
       author: author.trim(),
       image,
     });
-    res.status(201).json(item);
+    res.status(201).json({
+        status: "success",
+        message: "Buku created successfully",
+        data: item
+    })
   })
 );
 
