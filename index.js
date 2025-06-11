@@ -25,7 +25,7 @@ const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-const validateArtworkData = (req, res, next) => {
+const validateBukuData = (req, res, next) => {
   const { title, author} = req.body;
   const errors = [];
   if (!title?.trim()) errors.push("Title harus diisi");
@@ -47,7 +47,7 @@ const ensureDirectoryExists = async (dir) => {
   }
 };
 
-class ArtworkService {
+class BukuService {
   static async readData() {
     try {
       const data = await fs.readFile(DATA_FILE, "utf8");
@@ -106,7 +106,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `artwork-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+    cb(null, `buku-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
   },
 });
 const fileFilter = (req, file, cb) => {
@@ -136,42 +136,42 @@ const deleteOldImage = async (imageUrl) => {
 app.get(
   "/",
   asyncHandler(async (req, res) => {
-    const artworks = await ArtworkService.readData(); // ✅ fix: ganti readAllArtworks()
+    const buku = await BukuService.readData(); // ✅ fix: ganti readAllBukus()
     res.json({
       message: "Welcome to the Books API",
-      data: artworks,
+      data: buku,
     });
   })
 );
 
 app.get(
-  "/artworks",
+  "/buku",
   asyncHandler(async (req, res) => {
-    const artworks = await ArtworkService.readData();
-    res.json(artworks);
+    const buku = await BukuService.readData();
+    res.json(buku);
   })
 );
 
 app.get(
-  "/artworks/:id",
+  "/buku/:id",
   asyncHandler(async (req, res) => {
-    const art = await ArtworkService.findById(req.params.id);
-    if (!art) return res.status(404).json({ error: "Artwork not found" });
+    const art = await BukuService.findById(req.params.id);
+    if (!art) return res.status(404).json({ error: "Buku not found" });
     res.json(art);
   })
 );
 
 app.post(
-  "/artworks",
+  "/buku",
   upload.single("image"),
-  validateArtworkData,
+  validateBukuData,
   asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Image is required" });
     const { title, author} = req.body;
     const image = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
     }`;
-    const item = await ArtworkService.create({
+    const item = await BukuService.create({
       title: title.trim(),
       author: author.trim(),
       image,
@@ -181,14 +181,14 @@ app.post(
 );
 
 app.put(
-  "/artworks/:id",
+  "/buku/:id",
   upload.single("image"),
-  validateArtworkData,
+  validateBukuData,
   asyncHandler(async (req, res) => {
-    const existing = await ArtworkService.findById(req.params.id);
+    const existing = await BukuService.findById(req.params.id);
     if (!existing) {
       if (req.file) await deleteOldImage(`/uploads/${req.file.filename}`);
-      return res.status(404).json({ error: "Artwork not found" });
+      return res.status(404).json({ error: "Buku not found" });
     }
     const { title, author } = req.body;
     let image = existing.image;
@@ -198,7 +198,7 @@ app.put(
         req.file.filename
       }`;
     }
-    const updated = await ArtworkService.update(req.params.id, {
+    const updated = await BukuService.update(req.params.id, {
       title: title.trim(),
       author: author.trim(),
       image,
@@ -208,10 +208,10 @@ app.put(
 );
 
 app.delete(
-  "/artworks/:id",
+  "/buku/:id",
   asyncHandler(async (req, res) => {
-    const removed = await ArtworkService.delete(req.params.id);
-    if (!removed) return res.status(404).json({ error: "Artwork not found" });
+    const removed = await BukuService.delete(req.params.id);
+    if (!removed) return res.status(404).json({ error: "Buku not found" });
     await deleteOldImage(removed.image);
     res.json({ message: "Deleted successfully", removed });
   })
