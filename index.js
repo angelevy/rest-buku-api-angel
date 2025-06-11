@@ -1,3 +1,4 @@
+import fsSync from "fs";
 import express from "express";
 import multer from "multer";
 import path from "path";
@@ -100,8 +101,10 @@ class BukuService {
 }
 
 const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    await ensureDirectoryExists(UPLOADS_DIR);
+  destination: (req, file, cb) => {
+    if (!fsSync.existsSync(UPLOADS_DIR)) {
+      fsSync.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
     cb(null, UPLOADS_DIR);
   },
   filename: (req, file, cb) => {
