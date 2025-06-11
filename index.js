@@ -29,7 +29,7 @@ const validateArtworkData = (req, res, next) => {
   const { title, author} = req.body;
   const errors = [];
   if (!title?.trim()) errors.push("Title harus diisi");
-  if (!author?.trim()) errors.push("Description harus diisi");
+  if (!author?.trim()) errors.push("author harus diisi");
  
   if (errors.length) {
     return res
@@ -173,7 +173,7 @@ app.post(
     }`;
     const item = await ArtworkService.create({
       title: title.trim(),
-      author: description.trim(),
+      author: author.trim(),
       image,
     });
     res.status(201).json(item);
@@ -200,7 +200,7 @@ app.put(
     }
     const updated = await ArtworkService.update(req.params.id, {
       title: title.trim(),
-      author: description.trim(),
+      author: author.trim(),
       image,
     });
     res.json(updated);
