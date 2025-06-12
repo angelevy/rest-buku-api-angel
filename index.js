@@ -16,12 +16,11 @@ const DATA_FILE = path.join(__dirname, "data.json");
 const UPLOADS_DIR = path.join(__dirname, "uploads");
 
 const app = express();
-const path = require("path");
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(UPLOADS_DIR));
 
 
 const asyncHandler = (fn) => (req, res, next) => {
