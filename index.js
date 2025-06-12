@@ -22,7 +22,6 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/uploads", express.static(UPLOADS_DIR));
 
-
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
@@ -154,9 +153,17 @@ app.get(
   "/buku",
   asyncHandler(async (req, res) => {
     const buku = await BukuService.readData();
-    res.json(buku);
+    const userId = req.query.userId; // ambil dari query params
+
+    const bukuWithMine = buku.map((item) => ({
+      ...item,
+      mine: userId ? item.userId === userId : false,
+    }));
+
+    res.json(bukuWithMine);
   })
 );
+
 
 app.get(
   "/buku/:id",
@@ -173,20 +180,25 @@ app.post(
   validateBukuData,
   asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Image is required" });
-    const { title, author} = req.body;
-    const image = `${req.protocol}://${req.get("host")}/uploads/${
-      req.file.filename
-    }`;
+
+    const { title, author, userId } = req.body;
+    if (!userId?.trim()) {
+      return res.status(400).json({ error: "userId harus diisi" });
+    }
+
+    const image = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
     const item = await BukuService.create({
       title: title.trim(),
       author: author.trim(),
       image,
+      userId: userId.trim(), // tambahkan userId di data buku
     });
+
     res.status(201).json({
-        status: "success",
-        message: "Buku created successfully",
-        data: item
-    })
+      status: "success",
+      message: "Buku created successfully",
+      data: item
+    });
   })
 );
 
