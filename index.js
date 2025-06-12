@@ -16,6 +16,8 @@ const DATA_FILE = path.join(__dirname, "data.json");
 const UPLOADS_DIR = path.join(__dirname, "uploads");
 
 const app = express();
+const express = require('express');
+const path = require('path');
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
