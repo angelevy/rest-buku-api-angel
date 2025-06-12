@@ -1,14 +1,46 @@
 [
-    {
-        "id": "1",
-        "title": "Atomic Habits",
-        "author": "James Clear",
-        "image": "https://covers.openlibrary.org/b/id/15090937-L.jpg"
-    },
-    {
-        "id": "2",
-        "title": "Rich Dad Poor Dad",
-        "author": "Robert Kiyosaki",
-        "image": "https://covers.openlibrary.org/b/id/11270106-L.jpg"
-    }
+  {
+    "id": "1",
+    "title": "Atomic Habits",
+    "author": "James Clear",
+    "image": "https://covers.openlibrary.org/b/id/15090937-L.jpg"
+  },
+  {
+    "id": "2",
+    "title": "Rich Dad Poor Dad",
+    "author": "Robert Kiyosaki",
+    "image": "https://covers.openlibrary.org/b/id/11270106-L.jpg"
+  },
+  {
+    "id": "816377e7-78fd-4774-b1f2-f8b7ddbedce9",
+    "title": "love you",
+    "author": "hahaha",
+    "image": "http://localhost:3000/uploads/buku-1749668229836-808805755.jpg",
+    "createdAt": "2025-06-11T18:57:09.846Z",
+    "updatedAt": "2025-06-11T18:57:09.846Z"
+  },
+  {
+    "id": "cb65cbc4-7e89-41b9-b730-d2d04e70de96",
+    "title": "love you",
+    "author": "hahaha",
+    "image": "http://localhost:3000/uploads/buku-1749706350273-297013372.jpg",
+    "createdAt": "2025-06-12T05:32:30.287Z",
+    "updatedAt": "2025-06-12T05:32:30.287Z"
+  },
+  {
+    "id": "656d8007-a9dd-446a-8195-8d0e3a858ddd",
+    "title": "kapan",
+    "author": "hahaha",
+    "image": "http://localhost:3000/uploads/buku-1749706360185-309634824.jpg",
+    "createdAt": "2025-06-12T05:32:40.197Z",
+    "updatedAt": "2025-06-12T05:32:40.198Z"
+  },
+  {
+    "id": "21f4bb7b-7e94-493b-90b9-a6c5901a9f91",
+    "title": "kapan",
+    "author": "hahaha",
+    "image": "http://localhost:3000/uploads/buku-1749706418090-325767293.jpg",
+    "createdAt": "2025-06-12T05:33:38.115Z",
+    "updatedAt": "2025-06-12T05:33:38.115Z"
+  }
 ]
