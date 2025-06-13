@@ -9,70 +9,101 @@ const { v4: uuidv4 } = require('uuid');
 
 const booksFilePath = path.join(__dirname, '../data/books.json');
 
-// ... (konfigurasi multer dan fungsi read/write tetap sama) ...
+// Konfigurasi multer untuk upload gambar
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'uploads/'),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage });
 
+// Fungsi bantu baca & tulis file
 function readBooks() {
     // Pastikan file ada, jika tidak, kembalikan array kosong
     if (!fs.existsSync(booksFilePath)) {
         return [];
     }
     const fileContent = fs.readFileSync(booksFilePath, 'utf-8');
-    return JSON.parse(fileContent);
+    // Tambahkan penanganan error jika JSON tidak valid
+    try {
+        return JSON.parse(fileContent);
+    } catch (e) {
+        console.error("Error parsing books.json:", e);
+        return [];
+    }
 }
 function writeBooks(data) {
     fs.writeFileSync(booksFilePath, JSON.stringify(data, null, 2));
 }
 
 
-// --- PERUBAHAN UTAMA DI SINI ---
-// GET Semua Buku (dengan filter email)
+// --- PERUBAHAN UTAMA ADA DI BAGIAN INI ---
+// GET Semua Buku (dengan data default)
 router.get('/', (req, res) => {
-    // Ambil email dari header Authorization, sama seperti saat POST/PUT/DELETE
-    const userEmail = req.headers.authorization;
-    const allBooks = readBooks();
+    // Data default yang akan selalu ditampilkan untuk semua pengguna
+    const defaultBooks = [
+      {
+        "id": "1",
+        "title": "Atomic Habits",
+        "author": "James Clear",
+        "image": "https://covers.openlibrary.org/b/id/15090937-L.jpg"
+        // Properti email sengaja dihilangkan agar tidak terikat pada user tertentu
+      },
+      {
+        "id": "2",
+        "title": "Rich Dad Poor Dad",
+        "author": "Robert Kiyosaki",
+        "image": "https://covers.openlibrary.org/b/id/11270106-L.jpg"
+      }
+    ];
 
-    let booksForUser;
+    const userEmail = req.headers.authorization;
+    const userGeneratedBooks = readBooks(); // Buku yang ditambahkan oleh semua pengguna dari file books.json
+
+    let booksForUser = [];
 
     if (userEmail) {
-        // Jika pengguna sudah login (ada email)
-        // Tampilkan buku publik (tanpa email) DAN buku milik pengguna itu sendiri
-        booksForUser = allBooks.filter(book => !book.email || book.email === userEmail);
+        // Jika pengguna login, filter buku yang ia buat dari books.json
+        const privateBooks = userGeneratedBooks.filter(book => book.email === userEmail);
         
-        // Tandai buku mana yang milik pengguna
-        booksForUser = booksForUser.map(book => ({
+        // Gabungkan buku default dengan buku pribadi pengguna
+        const combinedBooks = [...defaultBooks, ...privateBooks];
+
+        // Set properti 'mine' secara dinamis. Buku default tidak akan pernah 'mine',
+        // karena tidak memiliki properti email.
+        booksForUser = combinedBooks.map(book => ({
             ...book,
             mine: book.email === userEmail
         }));
     } else {
-        // Jika pengguna belum login
-        // Hanya tampilkan buku publik (yang tidak punya properti email)
-        booksForUser = allBooks.filter(book => !book.email).map(book => ({
+        // Jika pengguna tidak login, hanya tampilkan buku default
+        // Set properti 'mine' menjadi false untuk semua buku default
+        booksForUser = defaultBooks.map(book => ({
             ...book,
-            mine: false // Tidak ada yang menjadi miliknya
+            mine: false
         }));
     }
 
     res.json(booksForUser);
 });
 
-// GET Buku by ID (Tidak perlu diubah, karena sudah spesifik)
+// GET Buku by ID (Tidak perlu diubah)
 router.get('/:id', (req, res) => {
     const { id } = req.params;
     const books = readBooks();
     const book = books.find(b => b.id === id);
     if (!book) {
-        return res.status(404).json({ message: 'Buku tidak ditemukan' });
+        // Cek juga di buku default jika tidak ketemu
+        const defaultBook = defaultBooks.find(b => b.id === id);
+        if (!defaultBook) {
+            return res.status(404).json({ message: 'Buku tidak ditemukan' });
+        }
+        return res.json({...defaultBook, mine: false});
     }
     res.json(book);
 });
 
 
-// POST Tambah Buku (Sudah benar, email pemilik sudah disimpan)
+// POST Tambah Buku (Tidak perlu diubah)
 router.post('/', upload.single('image'), (req, res) => {
     const { title, author } = req.body;
     const file = req.file;
@@ -84,20 +115,18 @@ router.post('/', upload.single('image'), (req, res) => {
 
     const imageUrl = `/uploads/${file.filename}`;
     
-    // Properti `mine` tidak perlu disimpan di JSON, karena kita menentukannya secara dinamis di endpoint GET
     const newBook = {
         id: uuidv4(),
         title,
         author,
         image: imageUrl,
-        email, // Penting! Simpan email pemilik buku
+        email,
     };
 
     const books = readBooks();
     books.push(newBook);
     writeBooks(books);
 
-    // Saat mengembalikan data, kita bisa tambahkan properti `mine: true`
     res.status(201).json({ 
         status: "success", 
         message: "Buku berhasil ditambahkan", 
@@ -105,8 +134,7 @@ router.post('/', upload.single('image'), (req, res) => {
     });
 });
 
-// PUT dan DELETE (Sudah benar, karena sudah memeriksa email pemilik sebelum operasi)
-// Tidak ada perubahan yang diperlukan di sini.
+// PUT Update Buku (Tidak perlu diubah)
 router.put('/:id', upload.single('image'), (req, res) => {
     const { id } = req.params;
     const { title, author } = req.body;
@@ -134,6 +162,7 @@ router.put('/:id', upload.single('image'), (req, res) => {
     res.json({ status: "success", message: 'Buku berhasil diperbarui', data: {...books[index], mine: true} });
 });
 
+// DELETE Buku (Tidak perlu diubah)
 router.delete('/:id', (req, res) => {
     const { id } = req.params;
     const email = req.headers.authorization;
