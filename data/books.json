@@ -1,18 +1,19 @@
 [
   {
     "id": "1",
-    "title": "Belajar Android",
-    "author": "Indra Azimi",
-    "image": "https://example.com/book1.jpg",
-    "mine": true,
+    "title": "Atomic Habits",
+    "author": "James Clear",
+    "image": "https://covers.openlibrary.org/b/id/15090937-L.jpg",
+    "mine": false,
     "email": "example@gmail.com"
   },
   {
     "id": "2",
-    "title": "Compose Mastery",
-    "author": "Azka Tegar",
-    "image": "https://example.com/book2.jpg",
-    "mine": true,
-    "email": "tesuser@gmail.com"
+    "title": "Rich Dad Poor Dad",
+    "author": "Robert Kiyosaki",
+    "image": "https://covers.openlibrary.org/b/id/11270106-L.jpg",
+    "mine": false,
+    "email": "example@gmail.com"
+
   }
 ]
