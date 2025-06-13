@@ -24,10 +24,8 @@ function writeBooks(data) {
 
 // ========== GET Semua Buku ==========
 router.get('/', (req, res) => {
-  const userId = req.headers.authorization;
   const books = readBooks();
-  const filtered = books.filter(book => !book.email || book.email === userId);
-  res.json(filtered);
+  res.json(books);
 });
 
 // ========== GET Buku by ID ==========
