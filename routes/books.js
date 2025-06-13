@@ -24,8 +24,10 @@ function writeBooks(data) {
 
 // ========== GET Semua Buku ==========
 router.get('/', (req, res) => {
+  const userId = req.headers.authorization;
   const books = readBooks();
-  res.json(books);
+  const filtered = books.filter(book => !book.email || book.email === userId);
+  res.json(filtered);
 });
 
 // ========== GET Buku by ID ==========
@@ -45,9 +47,10 @@ router.get('/:id', (req, res) => {
 router.post('/', upload.single('image'), (req, res) => {
   const { title, author } = req.body;
   const file = req.file;
+  const email = req.headers.authorization;
 
-  if (!title || !author || !file) {
-    return res.status(400).json({ message: 'Judul, penulis, dan gambar wajib diisi' });
+  if (!title || !author || !file || !email) {
+    return res.status(400).json({ status: "error", message: 'Judul, penulis, email, dan gambar wajib diisi' });
   }
 
   const newBook = {
@@ -55,6 +58,7 @@ router.post('/', upload.single('image'), (req, res) => {
     title,
     author,
     image: `${req.protocol}://${req.get('host')}/uploads/${file.filename}`,
+    email,
     mine: true
   };
 
@@ -62,27 +66,27 @@ router.post('/', upload.single('image'), (req, res) => {
   books.push(newBook);
   writeBooks(books);
 
-  res.status(201).json(newBook);
+  res.status(201).json({ status: "success", message: "Buku berhasil ditambahkan", data: newBook });
 });
+
 
 // ========== PUT Update Buku ==========
 router.put('/:id', upload.single('image'), (req, res) => {
   const { id } = req.params;
   const { title, author } = req.body;
   const file = req.file;
+  const email = req.headers.authorization;
 
   const books = readBooks();
-  const index = books.findIndex(b => b.id === id);
+  const index = books.findIndex(b => b.id === id && b.email === email);
 
-  if (index === -1 || books[index].mine !== true) {
-    return res.status(404).json({ message: 'Buku tidak ditemukan atau tidak bisa diedit' });
+  if (index === -1) {
+    return res.status(404).json({ status: "error", message: 'Buku tidak ditemukan atau bukan milik Anda' });
   }
 
-  // Hapus gambar lama jika ada dan upload baru
   if (file && books[index].image) {
     const oldImagePath = books[index].image.replace(`${req.protocol}://${req.get('host')}/`, '');
     if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-
     books[index].image = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
   }
 
@@ -90,27 +94,30 @@ router.put('/:id', upload.single('image'), (req, res) => {
   books[index].author = author || books[index].author;
 
   writeBooks(books);
-  res.json({ message: 'Buku berhasil diperbarui', data: books[index] });
+  res.json({ status: "success", message: 'Buku berhasil diperbarui', data: books[index] });
 });
+
 
 // ========== DELETE Buku ==========
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
+  const email = req.headers.authorization;
+
   const books = readBooks();
-  const index = books.findIndex(b => b.id === id && b.mine === true);
+  const index = books.findIndex(b => b.id === id && b.email === email);
 
   if (index === -1) {
-    return res.status(404).json({ message: 'Buku tidak ditemukan atau tidak bisa dihapus' });
+    return res.status(404).json({ status: "error", message: 'Buku tidak ditemukan atau bukan milik Anda' });
   }
 
-  // Hapus file gambar jika ada
   const imagePath = books[index].image.replace(`${req.protocol}://${req.get('host')}/`, '');
   if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
 
   const deleted = books.splice(index, 1);
   writeBooks(books);
 
-  res.json({ message: 'Buku berhasil dihapus', data: deleted[0] });
+  res.json({ status: "success", message: 'Buku berhasil dihapus', data: deleted[0] });
 });
+
 
 module.exports = router;
