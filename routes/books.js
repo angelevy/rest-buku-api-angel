@@ -47,8 +47,7 @@ router.post('/', upload.single('image'), (req, res) => {
     const { title, author } = req.body;
     const file = req.file;
     const email = req.headers.authorization;
-    const imageUrl = `${baseUrl}/uploads/${file.filename}`;
-
+    const imageUrl = `/uploads/${file.filename}`;
     if (!title || !author || !file || !email) {
         return res.status(400).json({ status: "error", message: 'Judul, penulis, email, dan gambar wajib diisi' });
     }
