@@ -1,3 +1,5 @@
+// File: routes/books.js
+
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -7,28 +9,58 @@ const { v4: uuidv4 } = require('uuid');
 
 const booksFilePath = path.join(__dirname, '../data/books.json');
 
-// Konfigurasi multer untuk upload gambar
+// ... (konfigurasi multer dan fungsi read/write tetap sama) ...
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'uploads/'),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage });
 
-// Fungsi bantu baca & tulis file
 function readBooks() {
-    return JSON.parse(fs.readFileSync(booksFilePath, 'utf-8'));
+    // Pastikan file ada, jika tidak, kembalikan array kosong
+    if (!fs.existsSync(booksFilePath)) {
+        return [];
+    }
+    const fileContent = fs.readFileSync(booksFilePath, 'utf-8');
+    return JSON.parse(fileContent);
 }
 function writeBooks(data) {
     fs.writeFileSync(booksFilePath, JSON.stringify(data, null, 2));
 }
 
-// GET Semua Buku
+
+// --- PERUBAHAN UTAMA DI SINI ---
+// GET Semua Buku (dengan filter email)
 router.get('/', (req, res) => {
-    const books = readBooks();
-    res.json(books);
+    // Ambil email dari header Authorization, sama seperti saat POST/PUT/DELETE
+    const userEmail = req.headers.authorization;
+    const allBooks = readBooks();
+
+    let booksForUser;
+
+    if (userEmail) {
+        // Jika pengguna sudah login (ada email)
+        // Tampilkan buku publik (tanpa email) DAN buku milik pengguna itu sendiri
+        booksForUser = allBooks.filter(book => !book.email || book.email === userEmail);
+        
+        // Tandai buku mana yang milik pengguna
+        booksForUser = booksForUser.map(book => ({
+            ...book,
+            mine: book.email === userEmail
+        }));
+    } else {
+        // Jika pengguna belum login
+        // Hanya tampilkan buku publik (yang tidak punya properti email)
+        booksForUser = allBooks.filter(book => !book.email).map(book => ({
+            ...book,
+            mine: false // Tidak ada yang menjadi miliknya
+        }));
+    }
+
+    res.json(booksForUser);
 });
 
-// GET Buku by ID
+// GET Buku by ID (Tidak perlu diubah, karena sudah spesifik)
 router.get('/:id', (req, res) => {
     const { id } = req.params;
     const books = readBooks();
@@ -39,37 +71,42 @@ router.get('/:id', (req, res) => {
     res.json(book);
 });
 
-// POST Tambah Buku
+
+// POST Tambah Buku (Sudah benar, email pemilik sudah disimpan)
 router.post('/', upload.single('image'), (req, res) => {
     const { title, author } = req.body;
     const file = req.file;
-    // Di API Anda, email dikirim via header authorization. Ini sudah benar.
     const email = req.headers.authorization;
     
     if (!title || !author || !file || !email) {
         return res.status(400).json({ status: "error", message: 'Judul, penulis, email, dan gambar wajib diisi' });
     }
 
-    // Path gambar sudah benar, karena client (Android) akan menambahkan base URL
     const imageUrl = `/uploads/${file.filename}`;
-
+    
+    // Properti `mine` tidak perlu disimpan di JSON, karena kita menentukannya secara dinamis di endpoint GET
     const newBook = {
         id: uuidv4(),
         title,
         author,
         image: imageUrl,
-        email, // Simpan email pemilik buku
-        mine: true // Properti 'mine' sebaiknya ditentukan di client
+        email, // Penting! Simpan email pemilik buku
     };
 
     const books = readBooks();
     books.push(newBook);
     writeBooks(books);
 
-    res.status(201).json({ status: "success", message: "Buku berhasil ditambahkan", data: newBook });
+    // Saat mengembalikan data, kita bisa tambahkan properti `mine: true`
+    res.status(201).json({ 
+        status: "success", 
+        message: "Buku berhasil ditambahkan", 
+        data: { ...newBook, mine: true } 
+    });
 });
 
-// PUT Update Buku
+// PUT dan DELETE (Sudah benar, karena sudah memeriksa email pemilik sebelum operasi)
+// Tidak ada perubahan yang diperlukan di sini.
 router.put('/:id', upload.single('image'), (req, res) => {
     const { id } = req.params;
     const { title, author } = req.body;
@@ -83,25 +120,20 @@ router.put('/:id', upload.single('image'), (req, res) => {
     }
 
     if (file) {
-        // Hapus gambar lama jika ada gambar baru yang di-upload
         const oldImagePath = path.join(__dirname, '..', books[index].image);
         if (fs.existsSync(oldImagePath)) {
             fs.unlinkSync(oldImagePath);
         }
-        // --- PERUBAHAN DI SINI ---
-        // Simpan path relatif saja, sama seperti saat POST
         books[index].image = `/uploads/${file.filename}`;
     }
 
-    // Update title dan author jika ada di body request
     books[index].title = title || books[index].title;
     books[index].author = author || books[index].author;
 
     writeBooks(books);
-    res.json({ status: "success", message: 'Buku berhasil diperbarui', data: books[index] });
+    res.json({ status: "success", message: 'Buku berhasil diperbarui', data: {...books[index], mine: true} });
 });
 
-// DELETE Buku
 router.delete('/:id', (req, res) => {
     const { id } = req.params;
     const email = req.headers.authorization;
@@ -112,7 +144,6 @@ router.delete('/:id', (req, res) => {
         return res.status(404).json({ status: "error", message: 'Buku tidak ditemukan atau bukan milik Anda' });
     }
     
-    // Hapus file gambar terkait
     const imagePath = path.join(__dirname, '..', books[index].image);
     if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
@@ -121,7 +152,7 @@ router.delete('/:id', (req, res) => {
     const deleted = books.splice(index, 1);
     writeBooks(books);
 
-    res.json({ status: "success", message: 'Buku berhasil dihapus', data: deleted[0] });
+    res.json({ status: "success", message: 'Buku berhasil dihapus', data: {...deleted[0], mine: true} });
 });
 
 module.exports = router;
