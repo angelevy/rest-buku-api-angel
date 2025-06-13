@@ -5,9 +5,6 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-// Ganti IP static dengan BASE_URL dinamis
-const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-
 const booksFilePath = path.join(__dirname, '../data/books.json');
 
 // Konfigurasi multer untuk upload gambar
@@ -46,19 +43,23 @@ router.get('/:id', (req, res) => {
 router.post('/', upload.single('image'), (req, res) => {
     const { title, author } = req.body;
     const file = req.file;
+    // Di API Anda, email dikirim via header authorization. Ini sudah benar.
     const email = req.headers.authorization;
-    const imageUrl = `/uploads/${file.filename}`;
+    
     if (!title || !author || !file || !email) {
         return res.status(400).json({ status: "error", message: 'Judul, penulis, email, dan gambar wajib diisi' });
     }
+
+    // Path gambar sudah benar, karena client (Android) akan menambahkan base URL
+    const imageUrl = `/uploads/${file.filename}`;
 
     const newBook = {
         id: uuidv4(),
         title,
         author,
         image: imageUrl,
-        email,
-        mine: true
+        email, // Simpan email pemilik buku
+        mine: true // Properti 'mine' sebaiknya ditentukan di client
     };
 
     const books = readBooks();
@@ -81,12 +82,18 @@ router.put('/:id', upload.single('image'), (req, res) => {
         return res.status(404).json({ status: "error", message: 'Buku tidak ditemukan atau bukan milik Anda' });
     }
 
-    if (file && books[index].image) {
-        const oldImagePath = books[index].image.replace(`${baseUrl}/`, '');
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-        books[index].image = `${baseUrl}/uploads/${file.filename}`;
+    if (file) {
+        // Hapus gambar lama jika ada gambar baru yang di-upload
+        const oldImagePath = path.join(__dirname, '..', books[index].image);
+        if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+        }
+        // --- PERUBAHAN DI SINI ---
+        // Simpan path relatif saja, sama seperti saat POST
+        books[index].image = `/uploads/${file.filename}`;
     }
 
+    // Update title dan author jika ada di body request
     books[index].title = title || books[index].title;
     books[index].author = author || books[index].author;
 
@@ -104,9 +111,12 @@ router.delete('/:id', (req, res) => {
     if (index === -1) {
         return res.status(404).json({ status: "error", message: 'Buku tidak ditemukan atau bukan milik Anda' });
     }
-
-    const imagePath = books[index].image.replace(`${baseUrl}/`, '');
-    if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+    
+    // Hapus file gambar terkait
+    const imagePath = path.join(__dirname, '..', books[index].image);
+    if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+    }
 
     const deleted = books.splice(index, 1);
     writeBooks(books);

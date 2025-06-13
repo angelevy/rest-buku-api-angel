@@ -1,4 +1,4 @@
-require('dotenv').config(); // Load .env config
+require('dotenv').config();
 
 const express = require('express');
 const app = express();
@@ -11,8 +11,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static file untuk akses gambar
-app.use(express.static(path.join(__dirname, 'uploads')));
+// --- PERUBAHAN DI SINI ---
+// Sajikan file dari folder 'uploads' di bawah rute '/uploads'
+// Contoh: Request ke /uploads/image.jpg akan mengambil file dari folder_proyek/uploads/image.jpg
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/books', booksRoute);
